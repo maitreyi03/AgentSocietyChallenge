@@ -27,12 +27,13 @@ REQUIRED_FILES_AMAZON = [
 ]
 
 REQUIRED_FILES_GOODREADS = [
-    'goodreads_books_children.json', 
-    'goodreads_reviews_children.json', 
-    'goodreads_books_comics_graphic.json', 
-    'goodreads_reviews_comics_graphic.json', 
-    'goodreads_books_poetry.json', 
-    'goodreads_reviews_poetry.json'
+    # 'goodreads_books_children.json', 
+    # 'goodreads_reviews_children.json', 
+    # 'goodreads_books_comics_graphic.json', 
+    # 'goodreads_reviews_comics_graphic.json', 
+    # 'goodreads_books_poetry.json', 
+    # 'goodreads_reviews_poetry.json',
+    'goodreads_books_young_adult.json'
 ]
 
 def load_data(file_path):
