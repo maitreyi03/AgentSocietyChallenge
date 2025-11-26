@@ -33,7 +33,9 @@ REQUIRED_FILES_GOODREADS = [
     # 'goodreads_reviews_comics_graphic.json', 
     # 'goodreads_books_poetry.json', 
     # 'goodreads_reviews_poetry.json',
-    'goodreads_books_young_adult.json'
+    'goodreads_books_young_adult.json',
+    'goodreads_reviews_young_adult.json',
+    'goodreads_interactions_young_adult.json'
 ]
 
 def load_data(file_path):
