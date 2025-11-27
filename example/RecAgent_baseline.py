@@ -173,7 +173,7 @@ if __name__ == "__main__":
     simulator.set_agent(MyRecommendationAgent)
 
     # Set LLM client
-    simulator.set_llm(GeminiLLM(api_key="AIzaSyD3z0wpSCwvK__jAURVli9qp5DIZMYpKaw"))
+    simulator.set_llm(GeminiLLM(api_key="AIzaSyCfnSOUK3nrqHQRkxS1Qp6LwzBSqPbg4_I"))
 
     # Run evaluation
     # If you don't set the number of tasks, the simulator will run all tasks.
