@@ -152,7 +152,7 @@ if __name__ == "__main__":
     simulator.set_agent(MoodRecAgent)
 
     # Set LLM client
-    simulator.set_llm(GeminiLLM(api_key="AIzaSyCfnSOUK3nrqHQRkxS1Qp6LwzBSqPbg4_I"))
+    simulator.set_llm(GeminiLLM(api_key="api-key-here"))
 
     # Run evaluation
     # If you don't set the number of tasks, the simulator will run all tasks.
