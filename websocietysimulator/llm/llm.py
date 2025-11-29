@@ -1,5 +1,7 @@
 from typing import Dict, List, Optional, Union
 from openai import OpenAI
+from google import genai
+from google.genai import types
 from langchain_openai import OpenAIEmbeddings
 from .infinigence_embeddings import InfinigenceEmbeddings
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
@@ -143,3 +145,85 @@ class OpenAILLM(LLMBase):
     
     def get_embedding_model(self):
         return self.embedding_model 
+
+# TODO need to recheck if this can be rewritten
+class GeminiLLM(LLMBase):
+    def __init__(self, api_key: str, model: str = "gemini-2.0-flash"):
+        """
+        Initialize Gemini LLM using the native Google Gen AI SDK.
+        """
+        super().__init__(model)
+        
+        self.client = genai.Client(api_key=api_key)
+        
+        self.embedding_model = OpenAIEmbeddings(
+            api_key=api_key,
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+        )
+
+    def _convert_messages(self, messages: List[Dict[str, str]]) -> List[types.Content]:
+        """
+        Helper: Convert OpenAI-style [{'role': 'user', 'content': '...'}] 
+        to Google-style Content objects.
+        """
+        google_contents = []
+        
+        for msg in messages:
+            role = msg.get("role")
+            content = msg.get("content")
+            
+            if role == "system":
+                continue 
+            elif role == "assistant":
+                role = "model"
+            
+            google_contents.append(
+                types.Content(
+                    role=role,
+                    parts=[types.Part(text=content)]
+                )
+            )
+        return google_contents
+
+    def _extract_system_prompt(self, messages: List[Dict[str, str]]) -> Optional[str]:
+        """Helper to find the system prompt in the messages list."""
+        for msg in messages:
+            if msg.get("role") == "system":
+                return msg.get("content")
+        return None
+
+    def __call__(self, messages: List[Dict[str, str]], model: Optional[str] = None, temperature: float = 0.0, max_tokens: int = 500, stop_strs: Optional[List[str]] = None, n: int = 1) -> Union[str, List[str]]:
+        """
+        Call Native Gemini API
+        """
+        target_model = model or self.model
+        
+        google_contents = self._convert_messages(messages)
+        system_instruction = self._extract_system_prompt(messages)
+
+        config = types.GenerateContentConfig(
+            temperature=temperature,
+            max_output_tokens=max_tokens,
+            stop_sequences=stop_strs,
+            candidate_count=n,
+            system_instruction=system_instruction
+        )
+
+        try:
+            response = self.client.models.generate_content(
+                model=target_model,
+                contents=google_contents,
+                config=config
+            )
+            
+            if n == 1:
+                return response.text
+            else:
+                return [candidate.content.parts[0].text for candidate in response.candidates]
+
+        except Exception as e:
+            print(f"Error calling Native Gemini API: {e}")
+            return "Error generating response"
+
+    def get_embedding_model(self):
+        return self.embedding_model
