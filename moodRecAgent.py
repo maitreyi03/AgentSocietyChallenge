@@ -215,7 +215,6 @@ class MoodRecAgent(RecommendationAgent):
 
         '''
         output = self.llm(messages=[{"role": "user", "content": description}])
-        print(f"LLM Output: {output}")
                 
 
         try:
@@ -225,7 +224,9 @@ class MoodRecAgent(RecommendationAgent):
             else:
                 print("No list found.")
             print('Processed Output:',eval(result))
-            # time.sleep(4)
+            bookid_title_map = {item['item_id']: item['title'] for item in mood_data}
+            recommended_titles = [bookid_title_map[item_id] for item_id in eval(result) if item_id in bookid_title_map]
+            print(f"Recommended Book Titles: {recommended_titles}")
             return eval(result)
         except:
             print('format error')
