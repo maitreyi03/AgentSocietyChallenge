@@ -8,6 +8,8 @@ from websocietysimulator.agent.modules.reasoning_modules import ReasoningBase
 import re
 import logging
 import time
+from dotenv import load_dotenv
+
 logging.basicConfig(level=logging.INFO)
 
 def num_tokens_from_string(string: str) -> int:
@@ -162,6 +164,8 @@ class MyRecommendationAgent(RecommendationAgent):
 
 
 if __name__ == "__main__":
+    load_dotenv()
+    api_key = os.environ['api_key']
     task_set = "goodreads" # "goodreads" or "yelp"
     # Initialize Simulator
     simulator = Simulator(data_dir="../../data/processed-data", device="auto", cache=True)
@@ -173,7 +177,7 @@ if __name__ == "__main__":
     simulator.set_agent(MyRecommendationAgent)
 
     # Set LLM client
-    simulator.set_llm(GeminiLLM(api_key="AIzaSyBY4cCV5_RnMGa5VnykfxlrUi0zy87EuoU"))
+    simulator.set_llm(GeminiLLM(api_key=api_key))
 
     # Run evaluation
     # If you don't set the number of tasks, the simulator will run all tasks.
