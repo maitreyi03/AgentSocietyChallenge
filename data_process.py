@@ -132,8 +132,8 @@ def load_and_process_amazon_data(input_dir):
 def load_and_process_goodreads_data(input_dir):
     """Load and process Goodreads dataset."""
     logging.info("Loading and processing Goodreads data...")
-    book_files = ['goodreads_books_children.json', 'goodreads_books_comics_graphic.json', 'goodreads_books_poetry.json']
-    review_files = ['goodreads_reviews_children.json', 'goodreads_reviews_comics_graphic.json', 'goodreads_reviews_poetry.json']
+    book_files = ['goodreads_books_young_adult.json']
+    review_files = ['goodreads_reviews_young_adult.json']
     
     all_books = pd.concat([load_data(os.path.join(input_dir, f)) for f in book_files])
     all_reviews = pd.concat([load_data(os.path.join(input_dir, f)) for f in review_files])
