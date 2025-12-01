@@ -8,7 +8,6 @@ This agent implements a sophisticated multi-stage ranking system that:
 4. Applies a multi-factor scoring system (mood, theme, novelty, rating)
 5. Learns long-term user preferences through memory
 
-Author: Enhanced for WWW'25 AgentSociety Challenge
 """
 
 import json

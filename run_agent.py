@@ -38,7 +38,7 @@ def check_environment():
     print("✅ API Key configured")
     
     # Check data directory
-    data_dir = Path(__file__).parent.parent / 'data' / 'processed-data'
+    data_dir = Path.home() / 'data' / 'processed-data'
     if not data_dir.exists():
         print(f"⚠️  WARNING: Data directory not found at {data_dir}")
         print("   Make sure your data is in the correct location")
@@ -81,7 +81,7 @@ def run_agent(num_tasks=50, max_workers=5, task_set="goodreads"):
     api_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('api_key')
     
     # Configuration
-    data_dir = "../../data/processed-data"
+    data_dir = os.path.expanduser("~/data/processed-data")
     
     # Initialize Simulator
     print("Initializing simulator...")

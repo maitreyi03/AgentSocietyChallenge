@@ -132,8 +132,8 @@ def load_and_process_amazon_data(input_dir):
 def load_and_process_goodreads_data(input_dir):
     """Load and process Goodreads dataset."""
     logging.info("Loading and processing Goodreads data...")
-    book_files = ['goodreads_books_young_adult.json']
-    review_files = ['goodreads_reviews_young_adult.json']
+    book_files = ['goodreads_books_children.json', 'goodreads_books_comics_graphic.json', 'goodreads_books_poetry.json']
+    review_files = ['goodreads_reviews_children.json', 'goodreads_reviews_comics_graphic.json', 'goodreads_reviews_poetry.json']
     
     all_books = pd.concat([load_data(os.path.join(input_dir, f)) for f in book_files])
     all_reviews = pd.concat([load_data(os.path.join(input_dir, f)) for f in review_files])
@@ -144,7 +144,7 @@ def merge_business_data(goodreads_books, output_file=None):
     """Merge business data from all sources while preserving source-specific columns."""
     logging.info("Merging business data for business...")
     
-    # # 将Yelp数据转换为json格式
+    # # conver yelp data to json
     # yelp_business = yelp_business.rename(columns={
     #     'business_id': 'item_id',
     # })
@@ -152,7 +152,6 @@ def merge_business_data(goodreads_books, output_file=None):
     # yelp_business['type'] = 'business'
     # yelp_json = json.loads(yelp_business.to_json(orient='records'))
     
-    # # 将Amazon数据转换为json格式
     # amazon_business = amazon_meta.rename(columns={
     #     'parent_asin': 'item_id'
     # })
@@ -160,7 +159,6 @@ def merge_business_data(goodreads_books, output_file=None):
     # amazon_business['type'] = 'product'
     # amazon_json = json.loads(amazon_business.to_json(orient='records'))
     
-    # 将Goodreads数据转换为json格式
     goodreads_business = goodreads_books.rename(columns={
         'book_id': 'item_id', 
     })
@@ -236,17 +234,14 @@ def create_unified_users(goodreads_reviews, output_file=None):
     # })
     # amazon_json = json.loads(amazon_users.to_json(orient='records'))
     
-    # 创建Goodreads用户数据并转换为json格式
     goodreads_users = pd.DataFrame({
         'user_id': goodreads_reviews['user_id'].unique(),
         'source': 'goodreads'
     })
     goodreads_json = json.loads(goodreads_users.to_json(orient='records'))
     
-    # 合并所有json数据
     merged_json = goodreads_json
     
-    # 如果指定了输出文件，则保存
     if output_file:
         logging.info(f"Saving merged user data to {output_file}...")
         with open(output_file, 'w') as f:

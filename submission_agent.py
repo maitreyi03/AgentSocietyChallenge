@@ -215,7 +215,7 @@ class AdvancedMoodRecAgent(RecommendationAgent):
     def _infer_user_mood(self, user_data: str, review_data: str) -> str:
         """Infer user's desired mood from their profile and history"""
         try:
-            recent_reviews = review_data[:2000]
+            recent_reviews = review_data[:2000]  # Limit to recent context
             mood = self.reasoning.infer_user_mood(
                 user_profile=user_data[:1000],
                 recent_reviews=recent_reviews,
@@ -265,7 +265,7 @@ class AdvancedMoodRecAgent(RecommendationAgent):
                 popularity_score = min(ratings_count / 10000, 1.0)
                 
                 novelty_score = self._assess_novelty(candidate, review_data)
-                
+                # Weighted final score
                 final_score = (
                     0.40 * mood_score +
                     0.20 * rating_score +
