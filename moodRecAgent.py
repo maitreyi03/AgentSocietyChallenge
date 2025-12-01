@@ -1,23 +1,10 @@
 import json
-import os
-import re
-from dotenv import load_dotenv
 from websocietysimulator.agent import RecommendationAgent
 from websocietysimulator.agent.modules.memory_modules import MemoryBase
 from websocietysimulator.agent.modules.planning_modules import PlanningBase
 from websocietysimulator.agent.modules.reasoning_modules import ReasoningBase
 from websocietysimulator.llm.llm import GeminiLLM, LLMBase
 from websocietysimulator.simulator import Simulator
-import tiktoken
-import ast
-
-def num_tokens_from_string(string: str) -> int:
-    encoding = tiktoken.get_encoding("cl100k_base")
-    try:
-        a = len(encoding.encode(string))
-    except:
-        print(encoding.encode(string))
-    return a
 
 class RecPlanning(PlanningBase):
     """Inherits from PlanningBase"""
@@ -70,6 +57,7 @@ class RecReasoning(ReasoningBase):
             except Exception as e:
                 print(f"Warning: Memory retrieval failed: {e}")
         
+        """
         prompt = '''
         You are a profile inference agent. Your task is to determine the user's mood based on what the user is requesting.
         If the request is generic, you must analyze the historical profile and recent context to infer a mood that is highly likely to appeal to the user, even if not explicitly stated.
@@ -78,11 +66,6 @@ class RecReasoning(ReasoningBase):
         Recent context/interactions: {recent_context}
         Output a string that describes the desired mood so that this can be used to search the book database for matching books.
         
-        INSTRUCTION : Your goal is to infer a very specific mood (which aligns the most with the user's emotional state and preferences) that can be used to recommend books.
-        Strategy : 1. If the user's request is specific for eg, ' I want to read scary book', output the corresponding mood for eg 'spooky, thrilling, dark, halloween'.
-        2. If the user's request is generic and memory is strong for eg, ' I want to read a book', analyze the long-term profile and recent context to infer a mood that is likely to resonate with the user.
-        (eg, if the long-term profile indicates a preference for uplifting and heartwarming stories, and recent context shows interest in cozy settings, infer a mood like 'cozy, heartwarming, uplifting'.)
-        3. If the user's request is generic and memory is weak, infer a mood that is diverse and exploratory instead of neutral moods.
         Inferred Mood:
 '''
         prompt = prompt.format(
@@ -98,7 +81,53 @@ class RecReasoning(ReasoningBase):
             max_tokens=500
         )
         
-        return reasoning_result
+        return reasoning_result 
+        """
+        prompt = f"""
+        You are an expert mood profiler for Goodreads.
+
+        Your job:
+        - Infer a short comma-separated list (2–5 tags) that best describes the mood of the book(s) this user should read *right now*.
+
+        Rules:
+        - Output ONLY the comma-separated mood tags, nothing else.
+        - Do NOT explain, do NOT add quotes, do NOT add prefixes like "Mood:".
+
+        User's request:
+        {description}
+
+        User's long-term preference summary:
+        {long_term_profile}
+
+        Recent context / interactions:
+        {recent_context}
+
+        Examples:
+
+        Example 1
+        Request: "I want something scary for Halloween."
+        Output: spooky, dark, intense, Halloween
+
+        Example 2
+        Request: "Just recommend a book." (history shows cozy romance and feel-good stories)
+        Output: cozy, heartwarming, romantic
+
+        Now infer the best mood for this user.
+
+        Mood tags:
+        """
+        
+        messages = [{"role": "user", "content": prompt}]
+        reasoning_result = self.llm(
+            messages=messages,
+            temperature=0.3,   # more deterministic
+            max_tokens=32      # you only need a short phrase
+        )
+        
+        inferred = reasoning_result.strip()
+        print("Raw inferred mood:", inferred)
+        return inferred
+
     
 class MoodRecAgent(RecommendationAgent):
     def __init__(self, llm: LLMBase, memory=None): 
@@ -113,61 +142,8 @@ class MoodRecAgent(RecommendationAgent):
         Returns:
             list: Sorted list of item IDs
         """
-        
-        plan = [
-            {'description': 'First I need to find user information'},
-            {'description': 'Next, I need to find item information'},
-            {'description': 'Next, I need to find review information'}
-        ]
-         
-        user = ''
-        item_list = []
-        history_review = ''
-        for sub_task in plan:
-            
-            if 'user' in sub_task['description']:
-                user = str(self.interaction_tool.get_user(user_id=self.task['user_id']))
-                input_tokens = num_tokens_from_string(user)
-                if input_tokens > 12000:
-                    encoding = tiktoken.get_encoding("cl100k_base")
-                    user = encoding.decode(encoding.encode(user)[:12000])
-
-            elif 'item' in sub_task['description']:
-                for n_bus in range(len(self.task['candidate_list'])):
-                    item = self.interaction_tool.get_item(item_id=self.task['candidate_list'][n_bus])
-                    keys_to_extract = ['item_id', 'name','stars','review_count','attributes','title', 'average_rating', 'rating_number','description','ratings_count','title_without_series']
-                    filtered_item = {key: item[key] for key in keys_to_extract if key in item}
-                item_list.append(filtered_item)
-                # print(item)
-            elif 'review' in sub_task['description']:
-                history_review = str(self.interaction_tool.get_reviews(user_id=self.task['user_id']))
-                input_tokens = num_tokens_from_string(history_review)
-                if input_tokens > 12000:
-                    encoding = tiktoken.get_encoding("cl100k_base")
-                    history_review = encoding.decode(encoding.encode(history_review)[:12000])
-            else:
-                pass 
-            
-        task_description = f'''
-        You are a real user on goodreads. 
-        You want to read a book that you haven't read before and that matches your mood. 
-        Your profile information is as follows: {user}.
-        Your historical item review text and stars are as follows: {history_review}. 
-        Now you need to rank the following 20 items: {self.task['candidate_list']} according to their match degree to your preference.
-        Please rank the more interested items more front in your rank list.
-        The information of the above 20 candidate items is as follows: {item_list}.
-
-        Your final output should be ONLY a ranked item list of {self.task['candidate_list']} with the following format, DO NOT introduce any other item ids!
-        DO NOT output your analysis process!
-
-        The correct output format:
-
-        ['item id1', 'item id2', 'item id3', ...]
-
-        '''      
-            
         # Advanced Reasoning to infer user's desired mood
-        inferred_mood = self.reasoning(task_description)
+        inferred_mood = self.reasoning(description=self.task['description'])
         print(f"Inferred Mood: {inferred_mood}")
         
         # Planning to create a plan for recommendation
@@ -193,7 +169,7 @@ class MoodRecAgent(RecommendationAgent):
             mood_data.append(filtered_item)
             
         description = f'''
-        You are a user who wants to read a book that matches with your mood. 
+        Your task is to act as a Mood Recommender Agent. 
         
         Rank the books based on moods that aligns the most with the following user's profile.
         User's inferred mood: {inferred_mood}
@@ -205,36 +181,13 @@ class MoodRecAgent(RecommendationAgent):
         Then, apply a penalty/boost based on novelty by checking how different the book is from the user's historical preferences, 
         which you can infer from the long-term memory that can be accessed.
         Finally, return a sorted list of item IDs in descending order of relevance to the inferred mood.
-        
-        Your final output should be ONLY a ranked item list of {self.task['candidate_list']} with the following format, DO NOT introduce any other item ids!
-        DO NOT output your analysis process!
-
-        The correct output format:
-
-        ['item id1', 'item id2', 'item id3', ...]
-
         '''
-        output = self.llm(messages=[{"role": "user", "content": description}])
-        print(f"LLM Output: {output}")
-                
-
-        try:
-            match = re.search(r"\[.*\]", output, re.DOTALL)
-            if match:
-                result = match.group()
-            else:
-                print("No list found.")
-            print('Processed Output:',eval(result))
-            # time.sleep(4)
-            return eval(result)
-        except:
-            print('format error')
-            return ['']
+        
+        sorted_candidate_list = self.llm(messages=[{"role": "user", "content": description}])
+        return sorted_candidate_list
     
     
 if __name__ == "__main__":
-    load_dotenv()
-    api_key = os.environ['api_key']
     task_set = "goodreads" # "goodreads" or "yelp"
     # Initialize Simulator
     simulator = Simulator(data_dir="../../data/processed-data", device="auto", cache=True)
@@ -246,11 +199,11 @@ if __name__ == "__main__":
     simulator.set_agent(MoodRecAgent)
 
     # Set LLM client
-    simulator.set_llm(GeminiLLM(api_key=api_key))
+    simulator.set_llm(GeminiLLM(api_key="api-key-here"))
 
     # Run evaluation
     # If you don't set the number of tasks, the simulator will run all tasks.
-    agent_outputs = simulator.run_simulation(number_of_tasks=400, enable_threading=True, max_workers=10)
+    agent_outputs = simulator.run_simulation(number_of_tasks=50, enable_threading=True, max_workers=10)
 
     # Evaluate the agent
     evaluation_results = simulator.evaluate()
